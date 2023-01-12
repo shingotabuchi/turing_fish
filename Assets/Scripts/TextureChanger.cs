@@ -15,7 +15,7 @@ public class TextureChanger : MonoBehaviour
     public PlotMode plotMode;
     PlotMode setPlotMode;
     public ComputeShader compute;
-    public Renderer renderer;
+    public Renderer render;
     public int DIM;
     public int A;
     public float T,lambda;
@@ -34,7 +34,7 @@ public class TextureChanger : MonoBehaviour
         plotTexture = new Texture2D(DIM,DIM);
         plotPixels = new Color[DIM*DIM];
         // plotTexture.filterMode = FilterMode.Point;
-        renderer.material.SetTexture("Texture2D_BA36F61B", plotTexture);
+        render.material.SetTexture("Texture2D_BA36F61B", plotTexture);
         renderTexture = new RenderTexture(DIM,DIM,24);
         renderTexture.enableRandomWrite = true;
         sigma = new ComputeBuffer(DIM*DIM,sizeof(int));

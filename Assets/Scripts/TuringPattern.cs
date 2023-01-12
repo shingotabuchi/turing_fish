@@ -15,7 +15,7 @@ public class TuringPattern : MonoBehaviour
     public bool loadData;
     public LapalacianWeightType weightType;
     public ComputeShader compute;
-    public Renderer renderer;
+    public Renderer render;
     public int DIM;
     Texture2D plotTextureA;
     Texture2D plotTextureB;
@@ -52,12 +52,12 @@ public class TuringPattern : MonoBehaviour
     {
         plotTextureA = new Texture2D(DIM,DIM);
         plotTextureA.filterMode = FilterMode.Point;
-        renderer.material.SetTexture("_TextureA", plotTextureA);
+        render.material.SetTexture("_TextureA", plotTextureA);
         renderTextureA = new RenderTexture(DIM,DIM,24);
         renderTextureA.enableRandomWrite = true;
         plotTextureB = new Texture2D(DIM,DIM);
         plotTextureB.filterMode = FilterMode.Point;
-        renderer.material.SetTexture("_TextureB", plotTextureB);
+        render.material.SetTexture("_TextureB", plotTextureB);
         renderTextureB = new RenderTexture(DIM,DIM,24);
         renderTextureB.enableRandomWrite = true;
 
