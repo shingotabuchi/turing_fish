@@ -17,6 +17,7 @@ public class TuringPatternThree : MonoBehaviour
     RenderTexture renderTextureB;
     int init,step,plot;
     public float dx,dt,DA,DB;
+    float setDA,setDB;
     [Range(0.01f,0.1f)]
     public float feedR,killR;
     float setFeedR,setKillR;
@@ -37,8 +38,11 @@ public class TuringPatternThree : MonoBehaviour
         0.2f,  -1.0f,  0.2f,
         0.05f,  0.2f,  0.05f
     };
+    RenderTexture testTex;
+    public bool testBool;
     private void Start() 
     {
+        compute = Instantiate(compute);
         plotTextureA = new Texture2D(DIM,DIM);
         plotTextureA.filterMode = FilterMode.Point;
         render.material.SetTexture("_TextureA", plotTextureA);
@@ -49,6 +53,8 @@ public class TuringPatternThree : MonoBehaviour
         render.material.SetTexture("_TextureB", plotTextureB);
         renderTextureB = new RenderTexture(DIM,DIM,24);
         renderTextureB.enableRandomWrite = true;
+
+        testTex = new RenderTexture(DIM,DIM,24);
 
         Texture2D maskTextureCopy = new Texture2D(DIM, DIM);
         Graphics.ConvertTexture(maskTexture, maskTextureCopy);
@@ -93,7 +99,9 @@ public class TuringPatternThree : MonoBehaviour
         compute.SetFloat("killB",killB);
         setKillB = killB;
         compute.SetFloat("DA",DA);
+        setDA = DA;
         compute.SetFloat("DB",DB);
+        setDB = DB;
         compute.SetFloat("dx",dx);
         compute.SetFloat("dt",dt);
         compute.SetInt("DIM",DIM);
@@ -146,6 +154,16 @@ public class TuringPatternThree : MonoBehaviour
             SaveData();
             saveButton = false;
         }
+        if(setDA != DA)
+        {
+            compute.SetFloat("DA",DA);
+            setDA = DA;
+        }
+        if(setDB != DB)
+        {
+            compute.SetFloat("DB",DB);
+            setDB = DB;
+        }
         if(setFeedR != feedR)
         {
             compute.SetFloat("feedR",feedR);
@@ -180,12 +198,24 @@ public class TuringPatternThree : MonoBehaviour
             compute.Dispatch(step,(DIM+7)/8,(DIM+7)/8,1);
             compute.Dispatch(plot,(DIM+7)/8,(DIM+7)/8,1);
         }
-        RenderTexture.active = renderTextureA;
-        plotTextureA.ReadPixels(new Rect(0, 0, renderTextureA.width, renderTextureA.height), 0, 0);
-        plotTextureA.Apply();
-        RenderTexture.active = renderTextureB;
-        plotTextureB.ReadPixels(new Rect(0, 0, renderTextureB.width, renderTextureB.height), 0, 0);
-        plotTextureB.Apply();
+        if(testBool)
+        {
+            RenderTexture.active = testTex;
+            plotTextureA.ReadPixels(new Rect(0, 0, renderTextureA.width, renderTextureA.height), 0, 0);
+            plotTextureA.Apply();
+            RenderTexture.active = testTex;
+            plotTextureB.ReadPixels(new Rect(0, 0, renderTextureB.width, renderTextureB.height), 0, 0);
+            plotTextureB.Apply();
+        }
+        else
+        {
+            RenderTexture.active = renderTextureA;
+            plotTextureA.ReadPixels(new Rect(0, 0, renderTextureA.width, renderTextureA.height), 0, 0);
+            plotTextureA.Apply();
+            RenderTexture.active = renderTextureB;
+            plotTextureB.ReadPixels(new Rect(0, 0, renderTextureB.width, renderTextureB.height), 0, 0);
+            plotTextureB.Apply();
+        }
     }
 
     void SaveData()
