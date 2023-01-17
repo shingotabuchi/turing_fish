@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1352047542}
   - component: {fileID: 1352047543}
   m_Layer: 7
-  m_Name: Carp1
+  m_Name: Carp1 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -146,12 +146,12 @@ MonoBehaviour:
   maskTexture: {fileID: 2800000, guid: d419fe039fb3db248831f4e8d5f41d93, type: 3}
   dx: 1
   dt: 1
-  DA: 0.125
-  DB: 0.0625
-  feedR: 0.01
-  killR: 0.051
-  feedG: 0.0295
-  killG: 0.0588
+  DA: 0.2
+  DB: 0.1
+  feedR: 0.0148
+  killR: 0.0408
+  feedG: 0.0351
+  killG: 0.0587
   feedB: 0.0262
   killB: 0.0525
   loopCount: 10
