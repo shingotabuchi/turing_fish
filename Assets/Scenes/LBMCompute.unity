@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0053863553, g: 0.0053863553, b: 0.0053863553, a: 1}
+  m_IndirectSpecularColor: {r: 0.0053901775, g: 0.0053901775, b: 0.0053901775, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -580,12 +580,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c93e550d9ac61e04aac20e248a0b9b1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  speedMode: 1
   plotImage: {fileID: 2082642494}
   DIM: 128
-  pr: 0.71
-  ra: 100000
+  pr: 0.1
+  ra: 100
   tauf: 5
-  u0: 0.02
+  u0: 0.01
   loopCount: 1
   minTemp: 0
   maxTemp: 1

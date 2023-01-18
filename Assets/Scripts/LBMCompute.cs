@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public class LBMCompute : MonoBehaviour
 {
+    public bool speedMode;
     public Image plotImage;
     public int DIM;
     public float pr = 0.71f;
@@ -91,7 +92,7 @@ public class LBMCompute : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         if(debugMode)
         {
@@ -114,11 +115,29 @@ public class LBMCompute : MonoBehaviour
         }
         
         // compute.Dispatch(plotTemperature,(DIM+7)/8,(DIM+7)/8,1);
-        compute.Dispatch(plotSpeed,(DIM+7)/8,(DIM+7)/8,1);
+        if(speedMode) compute.Dispatch(plotSpeed,(DIM+7)/8,(DIM+7)/8,1);
+        else compute.Dispatch(plotTemperature,(DIM+7)/8,(DIM+7)/8,1);
 
         RenderTexture.active = renderTexture;
         plotTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
         plotTexture.Apply();
         
+    }
+
+    private void OnValidate() 
+    {
+        nu = (tauf - 0.5f)/3.0f;
+        chi = nu/pr;
+        taug = 3.0f*chi + 0.5f;
+        rbetag = ra*nu*chi/h/h/h;
+
+        compute.SetFloat("minTemp",minTemp);
+        compute.SetFloat("maxTemp",maxTemp);
+        compute.SetFloat("minSpeed",minSpeed);
+        compute.SetFloat("maxSpeed",maxSpeed);
+        compute.SetFloat("u0",u0);
+        compute.SetFloat("rbetag",rbetag);
+        compute.SetFloat("taug",taug);
+        compute.SetFloat("tauf",tauf);
     }
 }

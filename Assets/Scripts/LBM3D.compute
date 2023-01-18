@@ -1,0 +1,39 @@
+#pragma kernel Init;
+
+RWStructuredBuffer<float4> pixels3D;
+uint DIM;
+uint offsetx;
+uint offsety;
+uint offsetz;
+uint Hash(uint s)
+{
+    s ^= 2747636419u;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    return s;
+}
+
+float Random(uint seed)
+{
+    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+[numthreads(8, 8, 8)]
+void SetRandom(uint3 id : SV_DispatchThreadID)
+{
+    pixels3D[id.x + id.y*DIM + id.z*DIM*DIM] = float4(
+        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsetx + offsetx),
+        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsety + offsety),
+        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsetz + offsetz),
+        1.0
+    );
+}
+
+[numthreads(8, 8, 8)]
+void Init(uint3 id : SV_DispatchThreadID)
+{
+
+}

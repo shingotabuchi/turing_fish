@@ -13,6 +13,7 @@ float minSpeed,maxSpeed;
 
 float4 ColorMap(float val, float maxVal)
 {
+    if(val > maxVal) val = maxVal;
     float4 colorsOfMap[7] = 
     {
         float4(0,0,0,1),
@@ -90,8 +91,8 @@ void Collisions(uint3 id : SV_DispatchThreadID)
         if(k < 5)temperature += g[k + (id.x + id.y*DIM)*5];
     }
     float u2 = uv[(id.x + id.y*DIM)*2 + 0]*uv[(id.x + id.y*DIM)*2 + 0] + uv[(id.x + id.y*DIM)*2 + 1]*uv[(id.x + id.y*DIM)*2 + 1];   
-    // float fy = rbetag*(temperature - 0.5);
-    float fy = 0;
+    float fy = rbetag*(temperature - 0.5);
+    // float fy = 0;
     for (k = 0; k < 9; k++)
     {
         float tmp = cx[k]*uv[(id.x + id.y*DIM)*2 + 0] + cy[k]*uv[(id.x + id.y*DIM)*2 + 1];     
@@ -176,7 +177,7 @@ void PlotTemperature(uint3 id : SV_DispatchThreadID)
 void PlotSpeed(uint3 id : SV_DispatchThreadID)
 {
     float speed = sqrt(uv[(id.x + id.y*DIM)*2 + 0]*uv[(id.x + id.y*DIM)*2 + 0] + uv[(id.x + id.y*DIM)*2 + 1]*uv[(id.x + id.y*DIM)*2 + 1]);
-    // renderTexture[id.xy] = ColorMap(speed-minSpeed,maxSpeed-minSpeed);
-    renderTexture[id.xy] = float4(uv[(id.x + id.y*DIM)*2 + 0] * 100,uv[(id.x + id.y*DIM)*2 + 1] * 100,1,1);
+    renderTexture[id.xy] = ColorMap(speed-minSpeed,maxSpeed-minSpeed);
+    // renderTexture[id.xy] = float4(uv[(id.x + id.y*DIM)*2 + 0],uv[(id.x + id.y*DIM)*2 + 1],1,1);
 }
 
