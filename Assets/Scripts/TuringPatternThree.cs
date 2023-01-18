@@ -8,7 +8,7 @@ public class TuringPatternThree : MonoBehaviour
 {
     public bool loadData;
     public ComputeShader compute;
-    public Renderer render;
+    public List<Renderer> renderList = new List<Renderer>();
     public int DIM;
     public Texture2D maskTexture;
     Texture2D plotTextureA;
@@ -45,15 +45,17 @@ public class TuringPatternThree : MonoBehaviour
         compute = Instantiate(compute);
         plotTextureA = new Texture2D(DIM,DIM);
         plotTextureA.filterMode = FilterMode.Point;
-        render.material.SetTexture("_TextureA", plotTextureA);
         renderTextureA = new RenderTexture(DIM,DIM,24);
         renderTextureA.enableRandomWrite = true;
         plotTextureB = new Texture2D(DIM,DIM);
         plotTextureB.filterMode = FilterMode.Point;
-        render.material.SetTexture("_TextureB", plotTextureB);
         renderTextureB = new RenderTexture(DIM,DIM,24);
         renderTextureB.enableRandomWrite = true;
-
+        foreach (var render in renderList)
+        {
+            render.material.SetTexture("_TextureA", plotTextureA);
+            render.material.SetTexture("_TextureB", plotTextureB);
+        }
         testTex = new RenderTexture(DIM,DIM,24);
 
         Texture2D maskTextureCopy = new Texture2D(DIM, DIM);

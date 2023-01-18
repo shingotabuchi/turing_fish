@@ -34,7 +34,7 @@ public class RandomFishBehaviour : MonoBehaviour
         StartCoroutine(HorizontalTurn());
     }
 
-    private void Update() 
+    private void FixedUpdate() 
     {
         float zAngle = Mathf.SmoothDampAngle(transform.rotation.eulerAngles.z, 0, ref zRotVelocity, levelSmoothTime);
         float xAngle = Mathf.SmoothDampAngle(transform.rotation.eulerAngles.x, 0, ref xRotVelocity, levelSmoothTime);
@@ -53,7 +53,7 @@ public class RandomFishBehaviour : MonoBehaviour
                 StartCoroutine(HorizontalTurnForce());
             }
             // yield return new WaitForSeconds(horizontalTurnInterval);
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
     }
 
@@ -72,7 +72,7 @@ public class RandomFishBehaviour : MonoBehaviour
             if(animator.speed < animatorMaxSpeed) animator.speed += animatorAccel*Time.deltaTime;
             rb.AddTorque(transform.up * horizontalTurnTorque * leftOrRight);
             timer += Time.deltaTime;
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
     }
 
@@ -87,7 +87,7 @@ public class RandomFishBehaviour : MonoBehaviour
                 StartCoroutine(SprintForce());
             }
             // yield return new WaitForSeconds(sprintInterval);
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
     }
 
@@ -100,7 +100,7 @@ public class RandomFishBehaviour : MonoBehaviour
             if(animator.speed < animatorMaxSpeed) animator.speed += animatorAccel*Time.deltaTime;
             rb.AddForce(sprintForce * transform.forward);
             timer += Time.deltaTime;
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
     }
 }
