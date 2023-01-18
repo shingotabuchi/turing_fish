@@ -1,0 +1,182 @@
+#pragma kernel Init
+#pragma kernel PlotTemperature
+#pragma kernel Collisions
+#pragma kernel Streaming
+#pragma kernel Boundaries
+#pragma kernel PlotSpeed
+
+RWTexture2D<float4> renderTexture;
+uint DIM;
+RWStructuredBuffer<float> uv,f,g;
+float maxTemp,minTemp,rbetag,taug,tauf,u0;
+float minSpeed,maxSpeed;
+
+float4 ColorMap(float val, float maxVal)
+{
+    float4 colorsOfMap[7] = 
+    {
+        float4(0,0,0,1),
+        float4(0,0,1,1),
+        float4(0,1,1,1),
+        float4(0,1,0,1),
+        float4(1,1,0,1),
+        float4(1,0,0,1),
+        float4(1,1,1,1),
+    };
+
+    float valPerc = val / maxVal;// value%
+    float colorPerc = 1.0 / (7.0-1.0);// % of each block of color. the last is the "100% Color"
+    int blockIdx = (int)(valPerc / colorPerc);// Idx of 
+    float valPercResidual = valPerc - (blockIdx*colorPerc);//remove the part represented of block 
+    float percOfColor = valPercResidual / colorPerc;// % of color of this block that will be filled
+    float4 cTarget = colorsOfMap[blockIdx];
+    float deltaR = 0;
+    float deltaG = 0;
+    float deltaB = 0;
+
+    if(blockIdx != 6)
+    {
+        float4 cNext = colorsOfMap[blockIdx + 1];
+        deltaR =cNext.x - cTarget.x;
+        deltaG =cNext.y - cTarget.y;
+        deltaB =cNext.z - cTarget.z;
+    }
+
+    float R = cTarget.r + (deltaR * percOfColor);
+    float G = cTarget.g + (deltaG * percOfColor);
+    float B = cTarget.b + (deltaB * percOfColor);
+
+    return float4(R,G,B,1.0);
+}
+
+[numthreads(8, 8, 1)]
+void Init(uint3 id : SV_DispatchThreadID)
+{
+    float tmp;
+    float temperature = (float)(DIM-1 - id.x)/(float)(DIM-1 - 1);
+    float cx[9] = {0, 1,    0,   -1,    0,     1,    -1,    -1,     1};
+    float cy[9] = {0, 0,    1,    0,   -1,     1,     1,    -1,    -1};
+    float wg[5] = {1.0/3.0,1.0/6.0,1.0/6.0,1.0/6.0,1.0/6.0};
+    float wf[9] = {4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0};
+    uv[(id.x + id.y * DIM)*2 + 0] = 0.0; 
+    uv[(id.x + id.y * DIM)*2 + 1] = 0.0; 
+    int k;
+    for(k = 0; k < 9; k++)
+    {
+        tmp = cx[k]*uv[(id.x + id.y*DIM)*2 + 0] + cy[k]*uv[(id.x + id.y*DIM)*2 + 1];     
+        f[k + (id.x + id.y*DIM)*9] = wf[k]*(1.0 +3.0*tmp +9.0/2.0*tmp*tmp);
+        if(k < 5)
+        g[k + (id.x + id.y*DIM)*5] = wg[k]*temperature*(1.0 + 3.0*tmp);
+    }
+}
+[numthreads(8, 8, 1)]
+void Collisions(uint3 id : SV_DispatchThreadID)
+{
+    float cx[9] = {0, 1,    0,   -1,    0,     1,    -1,    -1,     1};
+    float cy[9] = {0, 0,    1,    0,   -1,     1,     1,    -1,    -1};
+    float wg[5] = {1.0/3.0,1.0/6.0,1.0/6.0,1.0/6.0,1.0/6.0};
+    float wf[9] = {4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0};
+    float fx = 0.0; 
+    int k;
+    float temperature = 0.0;
+    float rho = 0.0;
+    uv[(id.x + id.y*DIM)*2 + 0] = 0.0;
+    uv[(id.x + id.y*DIM)*2 + 1] = 0.0;
+    for(k = 0; k < 9; k++)
+    {
+        uv[(id.x + id.y*DIM)*2 + 0] += f[k + (id.x + id.y*DIM)*9]*cx[k];
+        uv[(id.x + id.y*DIM)*2 + 1] += f[k + (id.x + id.y*DIM)*9]*cy[k];
+        rho += f[k + (id.x + id.y*DIM)*9];
+        if(k < 5)temperature += g[k + (id.x + id.y*DIM)*5];
+    }
+    float u2 = uv[(id.x + id.y*DIM)*2 + 0]*uv[(id.x + id.y*DIM)*2 + 0] + uv[(id.x + id.y*DIM)*2 + 1]*uv[(id.x + id.y*DIM)*2 + 1];   
+    // float fy = rbetag*(temperature - 0.5);
+    float fy = 0;
+    for (k = 0; k < 9; k++)
+    {
+        float tmp = cx[k]*uv[(id.x + id.y*DIM)*2 + 0] + cy[k]*uv[(id.x + id.y*DIM)*2 + 1];     
+        float f0 = wf[k]*rho*(1.0 +3.0*tmp +9.0/2.0*tmp*tmp -3.0/2.0*u2);
+        f[k + (id.x + id.y*DIM)*9] = f[k + (id.x + id.y*DIM)*9] - (f[k + (id.x + id.y*DIM)*9] - f0)/tauf + 3.0*wf[k]*(cx[k]*fx + cy[k]*fy);
+        f[DIM*DIM*9 + k + (id.x + id.y*DIM)*9] = f[k + (id.x + id.y*DIM)*9];
+
+        if(k < 5)
+        {
+            float g0 = wg[k]*temperature*(1.0 + 3.0*tmp);
+            g[k + (id.x + id.y*DIM)*5] = g[k + (id.x + id.y*DIM)*5] - (g[k + (id.x + id.y*DIM)*5] - g0)/taug;
+            g[DIM*DIM*5 + k + (id.x + id.y*DIM)*5] = g[k + (id.x + id.y*DIM)*5];
+        }
+    }
+}
+[numthreads(8, 8, 1)]
+void Streaming(uint3 id : SV_DispatchThreadID)
+{
+    float cx[9] = {0, 1,    0,   -1,    0,     1,    -1,    -1,     1};
+    float cy[9] = {0, 0,    1,    0,   -1,     1,     1,    -1,    -1};
+    int k;
+    for(k = 0; k < 9; k++)
+    {
+        int im = (int)id.x + (int)cx[k]; 
+        int jm = (int)id.y + (int)cy[k];
+        if((jm!=(int)DIM&&jm!=-1) && (im!=(int)DIM&&im!=-1))
+        {
+            f[k + (im + jm*DIM)*9] = f[DIM*DIM*9 + k + (id.x + id.y*DIM)*9];
+            if (k<5)
+            g[k + (im + jm*DIM)*5] = g[DIM*DIM*5 + k + (id.x + id.y*DIM)*5];
+        }
+    }
+}
+[numthreads(64, 1, 1)]
+void Boundaries(uint3 id : SV_DispatchThreadID)
+{
+    float localRho;
+    f[1 + (0 + id.x*DIM)*9] = f[3 + (0 + id.x*DIM)*9];
+    f[5 + (0 + id.x*DIM)*9] = f[7 + (0 + id.x*DIM)*9];
+    f[8 + (0 + id.x*DIM)*9] = f[6 + (0 + id.x*DIM)*9];
+    f[3 + (DIM-1 + id.x*DIM)*9] = f[1 + (DIM-1 + id.x*DIM)*9]; 
+    f[7 + (DIM-1 + id.x*DIM)*9] = f[5 + (DIM-1 + id.x*DIM)*9]; 
+    f[6 + (DIM-1 + id.x*DIM)*9] = f[8 + (DIM-1 + id.x*DIM)*9]; 
+    
+    localRho = 
+    f[0+ (id.x + (DIM-1)*DIM)*9] + f[1+ (id.x + (DIM-1)*DIM)*9] + f[3+ (id.x + (DIM-1)*DIM)*9] 
+    +2.0 * (f[2+ (id.x + (DIM-1)*DIM)*9] + f[6+ (id.x + (DIM-1)*DIM)*9]  +f[5+ (id.x + (DIM-1)*DIM)*9]);
+    
+    f[4+ (id.x + (DIM-1)*DIM)*9] = f[2+ (id.x + (DIM-1)*DIM)*9];
+    f[7+ (id.x + (DIM-1)*DIM)*9] = f[5+ (id.x + (DIM-1)*DIM)*9]-localRho*u0/6.0f;
+    f[8+ (id.x + (DIM-1)*DIM)*9] = f[6+ (id.x + (DIM-1)*DIM)*9]+localRho*u0/6.0f;
+
+    localRho = 
+    f[0+ (id.x + 0*DIM)*9] + f[1+ (id.x + 0*DIM)*9] + f[3+ (id.x + 0*DIM)*9] 
+    +2.0 * (f[2+ (id.x + 0*DIM)*9] + f[6+ (id.x + 0*DIM)*9]  +f[5+ (id.x + 0*DIM)*9]);
+
+    f[2+ (id.x + 0*DIM)*9] = f[4+ (id.x + 0*DIM)*9]; 
+    f[5+ (id.x + 0*DIM)*9] = f[7+ (id.x + 0*DIM)*9] - localRho*u0/6.0; 
+    f[6+ (id.x + 0*DIM)*9] = f[8+ (id.x + 0*DIM)*9] + localRho*u0/6.0; 
+
+
+    g[1 + (0 + id.x*DIM)*5] = g[3 + (0 +id.x*DIM)*5 ];
+    g[3 + (DIM-1 + id.x*DIM)*5] =g[1+ (DIM-1 + id.x*DIM)*5];
+    
+    g[4+ (id.x + (DIM-1)*DIM)*5] = g[2+ (id.x + (DIM-1)*DIM)*5];
+    g[2+ (id.x + 0*DIM)*5] = g[4+ (id.x + 0*DIM)*5];
+}
+[numthreads(8, 8, 1)]
+void PlotTemperature(uint3 id : SV_DispatchThreadID)
+{
+    float temperature = 0.0;
+    int k;
+    for(k = 0; k < 5; k++)
+    {
+        temperature += g[k + (id.x + id.y*DIM)*5];
+    }
+
+    renderTexture[id.xy] = ColorMap(temperature-minTemp,maxTemp-minTemp);
+}
+
+[numthreads(8, 8, 1)]
+void PlotSpeed(uint3 id : SV_DispatchThreadID)
+{
+    float speed = sqrt(uv[(id.x + id.y*DIM)*2 + 0]*uv[(id.x + id.y*DIM)*2 + 0] + uv[(id.x + id.y*DIM)*2 + 1]*uv[(id.x + id.y*DIM)*2 + 1]);
+    // renderTexture[id.xy] = ColorMap(speed-minSpeed,maxSpeed-minSpeed);
+    renderTexture[id.xy] = float4(uv[(id.x + id.y*DIM)*2 + 0] * 100,uv[(id.x + id.y*DIM)*2 + 1] * 100,1,1);
+}
+
