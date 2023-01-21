@@ -580,14 +580,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c93e550d9ac61e04aac20e248a0b9b1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speedMode: 1
+  speedMode: 0
   plotImage: {fileID: 2082642494}
-  DIM: 128
-  pr: 0.1
-  ra: 100
-  tauf: 5
-  u0: 0.01
-  loopCount: 1
+  DIM: 512
+  pr: 0.71
+  ra: 100000
+  tauf: 0.8
+  u0: -0.1
+  loopCount: 10
   minTemp: 0
   maxTemp: 1
   minSpeed: 0

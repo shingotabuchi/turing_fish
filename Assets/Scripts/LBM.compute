@@ -61,6 +61,7 @@ void Init(uint3 id : SV_DispatchThreadID)
     float wf[9] = {4.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/9.0,1.0/36.0,1.0/36.0,1.0/36.0,1.0/36.0};
     uv[(id.x + id.y * DIM)*2 + 0] = 0.0; 
     uv[(id.x + id.y * DIM)*2 + 1] = 0.0; 
+    if(id.y == DIM - 1) uv[(id.x + id.y * DIM)*2 + 0] = u0;
     int k;
     for(k = 0; k < 9; k++)
     {
@@ -85,11 +86,17 @@ void Collisions(uint3 id : SV_DispatchThreadID)
     uv[(id.x + id.y*DIM)*2 + 1] = 0.0;
     for(k = 0; k < 9; k++)
     {
-        uv[(id.x + id.y*DIM)*2 + 0] += f[k + (id.x + id.y*DIM)*9]*cx[k];
-        uv[(id.x + id.y*DIM)*2 + 1] += f[k + (id.x + id.y*DIM)*9]*cy[k];
         rho += f[k + (id.x + id.y*DIM)*9];
+    }
+    for(k = 0; k < 9; k++)
+    {
+        uv[(id.x + id.y*DIM)*2 + 0] += f[k + (id.x + id.y*DIM)*9]*cx[k]/rho;
+        uv[(id.x + id.y*DIM)*2 + 1] += f[k + (id.x + id.y*DIM)*9]*cy[k]/rho;
         if(k < 5)temperature += g[k + (id.x + id.y*DIM)*5];
     }
+
+    if(id.y == DIM - 1) uv[(id.x + id.y * DIM)*2 + 0] = u0;
+
     float u2 = uv[(id.x + id.y*DIM)*2 + 0]*uv[(id.x + id.y*DIM)*2 + 0] + uv[(id.x + id.y*DIM)*2 + 1]*uv[(id.x + id.y*DIM)*2 + 1];   
     float fy = rbetag*(temperature - 0.5);
     // float fy = 0;

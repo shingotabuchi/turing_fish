@@ -20,6 +20,12 @@ namespace StarterAssets
 		public bool cursorLocked = true;
 		public bool cursorInputForLook = true;
 
+		Player player;
+		
+		private void Start() {
+			player = GetComponent<Player>();
+		}
+
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
 		public void OnMove(InputValue value)
 		{
@@ -74,6 +80,27 @@ namespace StarterAssets
 		private void SetCursorState(bool newState)
 		{
 			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+		}
+
+		void Update()
+		{
+			if(Input.GetKeyDown(KeyCode.E) && player.pressEText.activeSelf)
+			{
+				if(cursorLocked)
+				{
+					player.OnPressE();
+					cursorLocked = false;
+					cursorInputForLook = false;
+					look = Vector2.zero;
+				}
+				else
+				{
+					player.OnPressEReset();
+					cursorLocked = true;
+					cursorInputForLook = true;
+				}
+			}
+			SetCursorState(cursorLocked);
 		}
 	}
 	

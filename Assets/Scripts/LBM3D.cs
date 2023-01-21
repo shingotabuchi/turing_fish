@@ -8,24 +8,20 @@ public class LBM3D : MonoBehaviour
     VisualEffect vfx;
     Texture3D tex3D;
     public int DIM;
+    public bool periodic;
     public ComputeShader compute;
-    public float ux_lid,uy_lid,uz_lid;
+    public float u_lid,v_lid,w_lid;
+    public bool vortexMode;
+    public float u0;
     public float rho0 = 1.0f;
     public float Re = 150f;
+    public int lidWidth;
+    public float forceRadius,forceScaler;
     float nu,tau,omega;
-    int setRandom,init;
+    int setRandom,initVortex,initZero,collisions,streaming,boundaries,periodicBoundaries;
     ComputeBuffer pixelBuffer,f;
     Color[] pixels3D;
-    const float t1 = 8f / 27f;
-    const float t2 = 2f / 27f;
-    const float t3 = 1f / 54f;
-    const float t4 = 1f / 216f;
-    // Discrete velocities
-    int[] ex = new int[27]{0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1};
-    int[] ey = new int[27]{0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1,-1};
-    int[] ez = new int[27]{0, 0, 0, 0, 0, 1,-1, 0, 0, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1, 1, 1, 1, 1,-1,-1,-1,-1};
-    
-    float[] w;
+    public int loopCount = 1;
     
     private void Start() {
         vfx = GetComponent<VisualEffect>();
@@ -33,23 +29,56 @@ public class LBM3D : MonoBehaviour
         vfx.SetTexture("FlowField",tex3D);
         pixels3D = new Color[DIM*DIM*DIM];
         pixelBuffer = new ComputeBuffer(DIM*DIM*DIM,sizeof(float)*4);
-        f = new ComputeBuffer(DIM*DIM*DIM*27,sizeof(float));
+
+        f = new ComputeBuffer(DIM*DIM*DIM*27*2,sizeof(float));
 
         setRandom = compute.FindKernel("SetRandom");
-        
+        initVortex = compute.FindKernel("InitVortex");
+        initZero = compute.FindKernel("InitZero");
+
         compute.SetInt("DIM",DIM);
+
+        SetVariables();
+
         compute.SetBuffer(setRandom,"pixels3D",pixelBuffer);
+        compute.SetBuffer(initVortex,"pixels3D",pixelBuffer);
+        compute.SetBuffer(initVortex,"f",f);
 
-        nu = ux_lid * nx / Re;
-        tau = 3.0f * nu + 0.5f;
-        omega = 1.0f / tau;
+        compute.SetBuffer(initZero,"pixels3D",pixelBuffer);
+        compute.SetBuffer(initZero,"f",f);
+        if(vortexMode)
+        {
+            collisions = compute.FindKernel("Collisions");
+            streaming = compute.FindKernel("Streaming");
+            boundaries = compute.FindKernel("Boundaries");
+            periodicBoundaries = compute.FindKernel("PeriodicBoundaries");
+            compute.SetBuffer(collisions,"pixels3D",pixelBuffer);
+            compute.SetBuffer(collisions,"f",f);
+            compute.SetBuffer(streaming,"f",f);
+            compute.SetBuffer(boundaries,"f",f);
+            compute.SetBuffer(periodicBoundaries,"f",f);
+        }
 
-        w = new float[27]{t1,t2,t2,t2,t2,t2,t2,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t4,t4,t4,t4,t4,t4,t4,t4};
-
+        // SetRandomPixelsCompute();
+        // SetRandomPixels();
+        compute.Dispatch(initZero,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
+        pixelBuffer.GetData(pixels3D);
+        tex3D.SetPixels(pixels3D);
+        tex3D.Apply();
     }
 
     private void Update() {
-        SetRandomPixelsCompute();
+        // SetRandomPixelsCompute();
+        for (int k = 0; k < loopCount; k++)
+        {
+            compute.Dispatch(collisions,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
+            compute.Dispatch(streaming,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
+            if(periodic) compute.Dispatch(periodicBoundaries,(DIM+7)/8,(DIM+7)/8,1);
+            else compute.Dispatch(boundaries,(DIM+7)/8,(DIM+7)/8,1);
+        }
+        pixelBuffer.GetData(pixels3D);
+        tex3D.SetPixels(pixels3D);
+        tex3D.Apply();
     }
 
     void SetRandomPixels()
@@ -57,6 +86,7 @@ public class LBM3D : MonoBehaviour
         for(int i = 0; i < DIM*DIM*DIM;i++)
         {
             pixels3D[i] = new Color(Random.Range(0f,1f),Random.Range(0f,1f),Random.Range(0f,1f),1f);
+            if(i < 100) print(pixels3D[i]);
         }
         tex3D.SetPixels(pixels3D);
         tex3D.Apply();
@@ -71,9 +101,35 @@ public class LBM3D : MonoBehaviour
         compute.Dispatch(setRandom,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
 
         pixelBuffer.GetData(pixels3D);
+        for (int i = 0; i < 100; i++)
+        {
+            print(pixels3D[i]);
+        }
         tex3D.SetPixels(pixels3D);
         tex3D.Apply();
     }
 
+    private void OnValidate() {
+        SetVariables();
+    }
 
+    void SetVariables()
+    {
+        nu = u_lid * DIM / Re;
+        if(vortexMode) nu = u0 * DIM / Re;
+        tau = 3.0f * nu + 0.5f;
+        omega = 1.0f / tau;
+        compute.SetInt("lidWidth",lidWidth);
+        compute.SetFloat("rho0",rho0);
+        compute.SetFloat("u_lid",u_lid);
+        compute.SetFloat("v_lid",v_lid);
+        compute.SetFloat("w_lid",w_lid);
+        compute.SetFloat("tau",tau);
+        if(vortexMode)
+        {
+            compute.SetFloat("forceRadius",forceRadius);
+            compute.SetFloat("forceScaler",forceScaler);
+            compute.SetFloat("u0",u0);
+        }
+    }
 }
