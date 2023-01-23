@@ -1,4 +1,3 @@
-#pragma kernel SetRandom;
 #pragma kernel InitVortex;
 #pragma kernel InitZero;
 #pragma kernel Collisions;
@@ -7,41 +6,12 @@
 #pragma kernel PeriodicBoundaries;
 #pragma kernel CollisionsCenterForce;
 
-RWStructuredBuffer<float4> pixels3D;
+RWStructuredBuffer<float3> velocityBuffer;
 RWStructuredBuffer<float> f;
 uint DIM;
-uint offsetx;
-uint offsety;
-uint offsetz;
 float rho0,tau,u0;
 float forceRadius;
 float forceScaler;
-uint Hash(uint s)
-{
-    s ^= 2747636419u;
-    s *= 2654435769u;
-    s ^= s >> 16;
-    s *= 2654435769u;
-    s ^= s >> 16;
-    s *= 2654435769u;
-    return s;
-}
-
-float Random(uint seed)
-{
-    return float(Hash(seed)) / 4294967295.0; // 2^32-1
-}
-
-[numthreads(8, 8, 8)]
-void SetRandom(uint3 id : SV_DispatchThreadID)
-{
-    pixels3D[id.x + id.y*DIM + id.z*DIM*DIM] = float4(
-        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsetx + offsetx),
-        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsety + offsety),
-        Random((id.x + id.y*DIM + id.z*DIM*DIM) * offsetz + offsetz),
-        1.0
-    );
-}
 
 [numthreads(8, 8, 8)]
 void InitVortex(uint3 id : SV_DispatchThreadID)
@@ -77,7 +47,7 @@ void InitVortex(uint3 id : SV_DispatchThreadID)
         f[DIM*DIM*DIM*27  + fIndex] = f[fIndex];
     }
 
-    pixels3D[gridIndex] = float4(u+0.5,v+0.5,w+0.5,1); 
+    velocityBuffer[gridIndex] = float3(u,v,w); 
 }
 
 [numthreads(8, 8, 8)]
@@ -113,7 +83,8 @@ void InitZero(uint3 id : SV_DispatchThreadID)
         f[fIndex] = weights[i] * rho0 * (1.0 + 3.0*eu + 4.5*eu*eu - 1.5*u2);
         f[DIM*DIM*DIM*27  + fIndex] = f[fIndex];
     }
-    pixels3D[gridIndex] = float4(u+0.5,v+0.5,w+0.5,1); 
+    velocityBuffer[gridIndex] = float3(u,v,w); 
+    if(id.z > DIM/2) velocityBuffer[gridIndex] = float3(1,1,1); 
 }
 
 [numthreads(8, 8, 8)]
@@ -166,7 +137,7 @@ void Collisions(uint3 id : SV_DispatchThreadID)
         f[DIM*DIM*DIM*27  + fIndex] = f[fIndex];
     }
 
-    pixels3D[gridIndex] = float4(u+0.5,v+0.5,w+0.5,1); 
+    velocityBuffer[gridIndex] = float3(u,v,w); 
 }
 
 [numthreads(8, 8, 8)]
@@ -219,7 +190,7 @@ void CollisionsCenterForce(uint3 id : SV_DispatchThreadID)
         f[DIM*DIM*DIM*27  + fIndex] = f[fIndex];
     }
 
-    pixels3D[gridIndex] = float4(u+0.5,v+0.5,w+0.5,1); 
+    velocityBuffer[gridIndex] = float3(u,v,w); 
 }
 
 [numthreads(8, 8, 8)]
