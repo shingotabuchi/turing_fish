@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.VFX;
 
 public class TuringPatternThree : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class TuringPatternThree : MonoBehaviour
     public List<Renderer> renderList = new List<Renderer>();
     public int DIM;
     public Texture2D maskTexture;
+    public Texture2D spawnPointTexture;
     Texture2D plotTextureA;
     Texture2D plotTextureB;
     RenderTexture renderTextureA;
@@ -18,13 +20,13 @@ public class TuringPatternThree : MonoBehaviour
     int init,step,plot;
     public float dx,dt,DA,DB;
     float setDA,setDB;
-    [Range(0.01f,0.1f)]
+    [Range(0.001f,0.1f)]
     public float feedR,killR;
     float setFeedR,setKillR;
-    [Range(0.01f,0.1f)]
+    [Range(0.001f,0.1f)]
     public float feedG,killG;
     float setFeedG,setKillG;
-    [Range(0.01f,0.1f)]
+    [Range(0.001f,0.1f)]
     public float feedB,killB;
     float setFeedB,setKillB;
     public int loopCount;
@@ -32,6 +34,12 @@ public class TuringPatternThree : MonoBehaviour
     public bool initButton;
     public bool saveButton;
     string dataName;
+    public VisualEffect particles;
+    public Light light;
+    public Color fishColor;
+    public float fishColorIntensity;
+    public float particleColorIntensity;
+    public float lightIntensity;
     float[] karlSimWeights = new float[9]
     {
         0.05f,  0.2f,  0.05f,
@@ -51,15 +59,23 @@ public class TuringPatternThree : MonoBehaviour
         plotTextureB.filterMode = FilterMode.Point;
         renderTextureB = new RenderTexture(DIM,DIM,24);
         renderTextureB.enableRandomWrite = true;
+        Color setColor = fishColor * Mathf.Pow(2f,particleColorIntensity);
+        particles.SetVector4("Color",setColor);
+        setColor = fishColor * Mathf.Pow(2f,fishColorIntensity);
         foreach (var render in renderList)
         {
             render.material.SetTexture("_TextureA", plotTextureA);
             render.material.SetTexture("_TextureB", plotTextureB);
+            render.material.SetColor("_ColorB",setColor);
         }
+        light.color = fishColor; 
+        light.intensity = lightIntensity;
         testTex = new RenderTexture(DIM,DIM,24);
 
         Texture2D maskTextureCopy = new Texture2D(DIM, DIM);
+        Texture2D spawnTextureCopy = new Texture2D(DIM, DIM);
         Graphics.ConvertTexture(maskTexture, maskTextureCopy);
+        Graphics.ConvertTexture(spawnPointTexture, spawnTextureCopy);
 
         A = new ComputeBuffer(DIM*DIM*2,sizeof(float));
         B = new ComputeBuffer(DIM*DIM*2,sizeof(float));
@@ -115,6 +131,7 @@ public class TuringPatternThree : MonoBehaviour
         compute.SetBuffer(init,"B",B);
         compute.SetTexture(init,"renderTextureA",renderTextureA);
         compute.SetTexture(init,"renderTextureB",renderTextureB);
+        compute.SetTexture(init,"spawnTexture",spawnTextureCopy);
 
         step = compute.FindKernel("Step");
         compute.SetBuffer(step,"A",A);
@@ -136,6 +153,30 @@ public class TuringPatternThree : MonoBehaviour
         RenderTexture.active = renderTextureB;
         plotTextureB.ReadPixels(new Rect(0, 0, renderTextureB.width, renderTextureB.height), 0, 0);
         plotTextureB.Apply();
+    }
+
+    public void Initialize()
+    {
+        compute.Dispatch(init,(DIM+7)/8,(DIM+7)/8,1);
+    }
+
+    public Color GetMaterialColor()
+    {
+        return fishColor;
+    }
+
+    public void SetMaterialColor(Color color)
+    {
+        fishColor = color;
+        Color setColor = fishColor * Mathf.Pow(2f,particleColorIntensity);
+        particles.SetVector4("Color",setColor);
+        setColor = fishColor * Mathf.Pow(2f,fishColorIntensity);
+        foreach (var render in renderList)
+        {
+            render.material.SetColor("_ColorB",setColor);
+        }
+        light.color = fishColor; 
+        light.intensity = lightIntensity;
     }
 
     static Texture2D ResizeTexture(Texture2D srcTexture, int newWidth, int newHeight) {
@@ -198,8 +239,9 @@ public class TuringPatternThree : MonoBehaviour
         for (int i = 0; i < loopCount; i++)
         {
             compute.Dispatch(step,(DIM+7)/8,(DIM+7)/8,1);
-            compute.Dispatch(plot,(DIM+7)/8,(DIM+7)/8,1);
+            // compute.Dispatch(plot,(DIM+7)/8,(DIM+7)/8,1);
         }
+        compute.Dispatch(plot,(DIM+7)/8,(DIM+7)/8,1);
         if(testBool)
         {
             RenderTexture.active = testTex;

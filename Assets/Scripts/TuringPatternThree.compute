@@ -3,6 +3,7 @@
 #pragma kernel Plot
 
 Texture2D<float4> maskTexture;
+Texture2D<float4> spawnTexture;
 RWTexture2D<float4> renderTextureA;
 RWTexture2D<float4> renderTextureB;
 uint DIM;
@@ -57,14 +58,14 @@ void Init(uint3 id : SV_DispatchThreadID)
     // float a = Random((id.x + id.y * DIM)*offsetA + offsetA);
     // float b = Random((id.x + id.y * DIM)*offsetB + offsetB);
     float a = 1;
-    float b = 0;
-    int x = int(id.x)-int(DIM/2);
-    int y = int(id.y)-int(DIM/2);
-    int divident = 128;
-    if(x*x + y*y < int(DIM/divident) * int(DIM/divident))
-    {
-        b = 1;
-    }
+    float b = spawnTexture[id.xy].x;
+    // int x = int(id.x)-int(DIM/2);
+    // int y = int(id.y)-int(DIM/2);
+    // int divident = 128;
+    // if(x*x + y*y < int(DIM/divident) * int(DIM/divident))
+    // {
+    //     b = 1;
+    // }
     A[id.x + id.y*DIM] = a;
     B[id.x + id.y*DIM] = b;
     A[DIM*DIM + id.x + id.y*DIM] = a;
@@ -89,22 +90,20 @@ void Step(uint3 id : SV_DispatchThreadID)
             - a * b * b
             + feed * (1 - a)
         )*dt;
+    A[DIM*DIM + id.x + id.y*DIM] = A[id.x + id.y*DIM];
     B[id.x + id.y*DIM] += (
             DB * laplacianB
             + a * b * b
             - (kill + feed) * b
         )*dt;
+    B[DIM*DIM + id.x + id.y*DIM] = B[id.x + id.y*DIM];
 }
 
 [numthreads(8,8,1)]
 void Plot (uint3 id : SV_DispatchThreadID)
 {
     float a = A[id.x + id.y*DIM];
-    A[DIM*DIM + id.x + id.y*DIM] = a;
     float b = B[id.x + id.y*DIM];
-    B[DIM*DIM + id.x + id.y*DIM] = b;
-    // float c = b/(a+b);
-    // renderTexture[id.xy] = float4(c,c,c,1);
     renderTextureA[id.xy] = float4(a,a,a,1);
     renderTextureB[id.xy] = float4(b,b,b,1);
 }
