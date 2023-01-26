@@ -86,7 +86,7 @@ namespace StarterAssets
 		{
 			if(Input.GetKeyDown(KeyCode.E))
 			{
-				if(cursorLocked && player.pressEText.activeSelf)
+				if(cursorLocked)
 				{
 					player.OnPressE();
 					cursorLocked = false;

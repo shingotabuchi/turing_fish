@@ -9,6 +9,7 @@ public class TuringSettingSliders : MonoBehaviour
     public TuringPatternThree turing;
     public float killFeedMin,killFeedMax;
     public Button initButton;
+    public Button quitButton;
     public enum RGB
     {
         R,
@@ -25,6 +26,10 @@ public class TuringSettingSliders : MonoBehaviour
         initButton.onClick.RemoveAllListeners();
         initButton.onClick.AddListener(delegate{
             turing.Initialize();
+        });
+        quitButton.onClick.RemoveAllListeners();
+        quitButton.onClick.AddListener(delegate{
+            Application.Quit();
         });
         foreach(Transform child in transform)
         {

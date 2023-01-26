@@ -8,7 +8,7 @@ public class Player : MonoBehaviour
     public GameObject pressEText;
     public GameObject BG;
     public float tankDistThres;
-    Transform closestTank;
+    public Transform closestTank;
     GameObject displayFish;
     public float displayFishDistance;
     public float displayFishRotateSpeed;
@@ -17,28 +17,28 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(displayFish!=null)
-        {
-            // if(Input.GetMouseButton(0))
-            // {
-            //     float h = displayFishRotateSpeed * Input.GetAxis("Mouse X");
-            //     float v = displayFishRotateSpeed * Input.GetAxis("Mouse Y");
-            //     displayFish.transform.Rotate(v, h, 0);
-            // }
+        // if(displayFish!=null)
+        // {
+        //     // if(Input.GetMouseButton(0))
+        //     // {
+        //     //     float h = displayFishRotateSpeed * Input.GetAxis("Mouse X");
+        //     //     float v = displayFishRotateSpeed * Input.GetAxis("Mouse Y");
+        //     //     displayFish.transform.Rotate(v, h, 0);
+        //     // }
 
-            return;
-        }
-        foreach(Transform tank in fishTanks)
-        {
-            float sqrDist = (transform.position - tank.position).sqrMagnitude;
-            if(sqrDist < tankDistThres*tankDistThres)
-            {
-                closestTank = tank;
-                pressEText.SetActive(true);
-                break;
-            }
-            pressEText.SetActive(false);
-        }
+        //     return;
+        // }
+        // foreach(Transform tank in fishTanks)
+        // {
+        //     float sqrDist = (transform.position - tank.position).sqrMagnitude;
+        //     if(sqrDist < tankDistThres*tankDistThres)
+        //     {
+        //         closestTank = tank;
+        //         pressEText.SetActive(true);
+        //         break;
+        //     }
+        //     pressEText.SetActive(false);
+        // }
 
         if(Input.GetKeyDown(KeyCode.R))
         {
@@ -62,6 +62,7 @@ public class Player : MonoBehaviour
 
     public void OnPressEReset()
     {
+        pressEText.SetActive(true);
         BG.SetActive(false);
         Destroy(displayFish);
     }
