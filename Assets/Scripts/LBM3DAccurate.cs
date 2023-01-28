@@ -31,6 +31,7 @@ public class LBM3DAccurate : MonoBehaviour
     Vector3[] velocityArray;
     GraphicsBuffer velocityGraphicsBuffer;
     public int loopCount = 1;
+    public bool tangentialForceIsOn;
     
     private void Start() {
         vfx = GetComponent<VisualEffect>();
@@ -48,6 +49,7 @@ public class LBM3DAccurate : MonoBehaviour
         periodicBoundaries = compute.FindKernel("PeriodicBoundaries");
 
         compute.SetInt("DIM",DIM);
+        compute.SetBool("tangentialForceIsOn",tangentialForceIsOn);
 
         SetVariables();
 
@@ -67,14 +69,6 @@ public class LBM3DAccurate : MonoBehaviour
 
         if(initType == InitType.Zero) compute.Dispatch(initZero,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
         if(initType == InitType.Vortex) compute.Dispatch(initVortex,(DIM+7)/8,(DIM+7)/8,(DIM+7)/8);
-
-        // for (int i = 0; i < DIM*DIM*DIM; i++)
-        // {
-        //     velocityArray[i] = new Vector3(1,1,1);
-        //     if(i%DIM > DIM/2) velocityArray[i] = new Vector3(0,0,0);
-        // }
-
-        // velocityGraphicsBuffer.SetData(velocityArray);
     }
 
     private void Update() {

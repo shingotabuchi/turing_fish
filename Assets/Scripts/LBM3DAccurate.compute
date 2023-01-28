@@ -12,6 +12,7 @@ uint DIM;
 float rho0,tau,u0;
 float forceRadius;
 float forceScaler;
+bool tangentialForceIsOn;
 
 [numthreads(8, 8, 8)]
 void InitVortex(uint3 id : SV_DispatchThreadID)
@@ -130,7 +131,7 @@ void Collisions(uint3 id : SV_DispatchThreadID)
         + ey[i] * v
         + ez[i] * w;
         float3 force = forceScaler * float3(-y,x,0);
-        if(x*x + y*y > forceRadius*forceRadius) force = float3(0,0,0);
+        if(x*x + y*y > forceRadius*forceRadius || !tangentialForceIsOn) force = float3(0,0,0);
         float feq = weights[i]*rho*(1.0 + 3.0*eu + 4.5*eu*eu - 1.5*u2);
 
         f[fIndex] = f[fIndex] - (f[fIndex] - feq)/tau + weights[i] * (force.x*ex[i] + force.y*ey[i] + force.z*ez[i]);
