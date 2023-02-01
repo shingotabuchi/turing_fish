@@ -4,20 +4,25 @@
 #pragma kernel Streaming;
 #pragma kernel Boundaries;
 #pragma kernel PeriodicBoundaries;
-#pragma kernel CollisionsCenterForce;
 
 RWStructuredBuffer<float3> velocityBuffer;
 RWStructuredBuffer<float> f;
 uint DIM;
 float rho0,tau,u0;
-float forceRadius;
-float forceScaler;
+float tangentialForceRadius;
+float tangentialForceScaler;
+float radialForceRadius;
+float radialForceScaler;
 bool tangentialForceIsOn;
+bool radialForceIsOn;
+bool isTouched;
+float2 touchTextureCoord;
+
+const float PI = 3.14159265f;
 
 [numthreads(8, 8, 8)]
 void InitVortex(uint3 id : SV_DispatchThreadID)
 {
-    float PI = 3.14159265f;
     const float t1 = 8. / 27.;
     const float t2 = 2. / 27.;
     const float t3 = 1. / 54.;
@@ -54,7 +59,6 @@ void InitVortex(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 8)]
 void InitZero(uint3 id : SV_DispatchThreadID)
 {
-    float PI = 3.14159265f;
     const float t1 = 8. / 27.;
     const float t2 = 2. / 27.;
     const float t3 = 1. / 54.;
@@ -91,6 +95,7 @@ void InitZero(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 8)]
 void Collisions(uint3 id : SV_DispatchThreadID)
 {
+    int touchCoordIndex;
     int gridIndex = (int)(id.x + id.y*DIM + id.z*DIM*DIM);
     const float t1 = 8. / 27.;
     const float t2 = 2. / 27.;
@@ -124,67 +129,54 @@ void Collisions(uint3 id : SV_DispatchThreadID)
     float x = (float)id.x/(float)(DIM-1) - 0.5;
     float y = (float)id.y/(float)(DIM-1) - 0.5;
     float z = (float)id.z/(float)(DIM-1) - 0.5;
+
+    bool inTangentialForceArea = false;
+    bool inRadialForceArea = false;
+    bool inTouchForceArea = false;  
+    
+    float distFromOriginSqrd = x*x + y*y;
+    if(distFromOriginSqrd < tangentialForceRadius*tangentialForceRadius && tangentialForceIsOn) inTangentialForceArea = true;
+    // if(distFromOriginSqrd < radialForceRadius*radialForceRadius && radialForceIsOn) inRadialForceArea = true;
+    float2 touchCoords[] = 
+    {
+        touchTextureCoord-float2(0.5,0.5),
+        touchTextureCoord-float2(0.5,0.5) + float2( 1.0, 0.0),
+        touchTextureCoord-float2(0.5,0.5) + float2(-1.0, 0.0),
+        touchTextureCoord-float2(0.5,0.5) + float2( 0.0, 1.0),
+        touchTextureCoord-float2(0.5,0.5) + float2( 0.0,-1.0)
+    };
+
+
+    if(isTouched)
+    {
+        for(touchCoordIndex = 0; touchCoordIndex < 5; touchCoordIndex++)
+        {
+            float2 coordFromTouch = float2(x,y) - touchCoords[touchCoordIndex];
+            float distFromTouchSqrd =  coordFromTouch.x * coordFromTouch.x + coordFromTouch.y * coordFromTouch.y;
+            if(distFromTouchSqrd < tangentialForceRadius*tangentialForceRadius)
+            {
+                inTouchForceArea = true;
+                break;
+            }
+        }
+    }
+
     for(i = 0; i < 27; i++)
     {
         int fIndex = gridIndex*27 + i;
         float eu = ex[i] * u
         + ey[i] * v
         + ez[i] * w;
-        float3 force = forceScaler * float3(-y,x,0);
-        if(x*x + y*y > forceRadius*forceRadius || !tangentialForceIsOn) force = float3(0,0,0);
-        float feq = weights[i]*rho*(1.0 + 3.0*eu + 4.5*eu*eu - 1.5*u2);
 
-        f[fIndex] = f[fIndex] - (f[fIndex] - feq)/tau + weights[i] * (force.x*ex[i] + force.y*ey[i] + force.z*ez[i]);
-        f[DIM*DIM*DIM*27  + fIndex] = f[fIndex];
-    }
+        float3 force = float3(0,0,0);
+        if(inTangentialForceArea) force += tangentialForceScaler * float3(-y,x,0);
+        if(inTouchForceArea)
+        {
+            float2 coordFromTouch = float2(x,y) - touchCoords[touchCoordIndex];
+            force += tangentialForceScaler * float3(-coordFromTouch.y,coordFromTouch.x,0);
+        }
+        if(inRadialForceArea) force += radialForceScaler * float3(x,y,0);
 
-    velocityBuffer[gridIndex] = float3(u,v,w); 
-}
-
-[numthreads(8, 8, 8)]
-void CollisionsCenterForce(uint3 id : SV_DispatchThreadID)
-{
-    int gridIndex = (int)(id.x + id.y*DIM + id.z*DIM*DIM);
-    const float t1 = 8. / 27.;
-    const float t2 = 2. / 27.;
-    const float t3 = 1. / 54.;
-    const float t4 = 1. / 216.;
-    float weights[27] = {t1,t2,t2,t2,t2,t2,t2,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t3,t4,t4,t4,t4,t4,t4,t4,t4};
-    int ex[27] = {0, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1,-1, 1,-1};
-    int ey[27] = {0, 0, 0, 1,-1, 0, 0, 1, 1,-1,-1, 0, 0, 0, 0, 1,-1, 1,-1, 1, 1,-1,-1, 1, 1,-1,-1};
-    int ez[27] = {0, 0, 0, 0, 0, 1,-1, 0, 0, 0, 0, 1, 1,-1,-1, 1, 1,-1,-1, 1, 1, 1, 1,-1,-1,-1,-1};
-
-    float u = 0;
-    float v = 0;
-    float w = 0;
-    float rho = 0;
-
-    int i;
-    for(i = 0; i < 27; i++)
-    {
-        int fIndex = gridIndex*27 + i;
-        rho += f[fIndex];
-    }
-    for(i = 0; i < 27; i++)
-    {
-        int fIndex = gridIndex*27 + i;
-        u += f[fIndex]*ex[i]/rho;
-        v += f[fIndex]*ey[i]/rho;
-        w += f[fIndex]*ez[i]/rho;
-    }
-
-    float u2 = u*u + v*v + w*w;
-    float x = (float)id.x/(float)(DIM-1) - 0.5;
-    float y = (float)id.y/(float)(DIM-1) - 0.5;
-    float z = (float)id.z/(float)(DIM-1) - 0.5;
-    for(i = 0; i < 27; i++)
-    {
-        int fIndex = gridIndex*27 + i;
-        float eu = ex[i] * u
-        + ey[i] * v
-        + ez[i] * w;
-        float3 force = forceScaler * float3(x,y,0);
-        if(x*x + y*y > forceRadius*forceRadius) force = float3(0,0,0);
         float feq = weights[i]*rho*(1.0 + 3.0*eu + 4.5*eu*eu - 1.5*u2);
 
         f[fIndex] = f[fIndex] - (f[fIndex] - feq)/tau + weights[i] * (force.x*ex[i] + force.y*ey[i] + force.z*ez[i]);
