@@ -26,6 +26,7 @@ public class LBM3DAccurate : MonoBehaviour
     public float Re = 150f;
     public float tangentialForceRadius,tangentialForceScaler;
     public float radialForceRadius,radialForceScaler;
+    public float touchForceRadius,touchForceScaler;
     float nu,tau,omega;
     int setRandom,initVortex,initZero,collisions,streaming,boundaries,periodicBoundaries;
     ComputeBuffer f;
@@ -34,6 +35,7 @@ public class LBM3DAccurate : MonoBehaviour
     public int loopCount = 1;
     public bool tangentialForceIsOn;
     public bool radialForceIsOn;
+    public bool touchForceIsOn;
     public UICanvas uiCanvas;
 
     Ray ray;
@@ -82,7 +84,7 @@ public class LBM3DAccurate : MonoBehaviour
     }
 
     private void Update() {
-        if(Input.GetMouseButton(0))
+        if(Input.GetMouseButton(0) && touchForceIsOn)
         {
             if(uiCanvas.sideCamera.enabled) ray = uiCanvas.sideCamera.ScreenPointToRay(Input.mousePosition);
             else ray = uiCanvas.topCamera.ScreenPointToRay(Input.mousePosition);
@@ -130,6 +132,10 @@ public class LBM3DAccurate : MonoBehaviour
         radialForceScaler = uiCanvas.radialForceScaler.value;
         radialForceRadius = uiCanvas.radialForceRadius.value;
 
+        touchForceIsOn = uiCanvas.touchForceToggle.isOn;
+        touchForceScaler = uiCanvas.touchForceScaler.value;
+        touchForceRadius = uiCanvas.touchForceRadius.value;
+
         nu = u0 * DIM / Re;
         tau = 3.0f * nu + 0.5f;
         omega = 1.0f / tau;
@@ -142,5 +148,9 @@ public class LBM3DAccurate : MonoBehaviour
         compute.SetFloat("radialForceRadius",radialForceRadius);
         compute.SetFloat("radialForceScaler",radialForceScaler);
         compute.SetBool("radialForceIsOn",radialForceIsOn);
+        compute.SetFloat("touchForceRadius",touchForceRadius);
+        compute.SetFloat("touchForceScaler",touchForceScaler);
+        compute.SetBool("touchForceIsOn",touchForceIsOn);
+
     }
 }

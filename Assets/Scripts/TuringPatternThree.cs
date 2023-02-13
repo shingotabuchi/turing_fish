@@ -40,6 +40,7 @@ public class TuringPatternThree : MonoBehaviour
     public float fishColorIntensity;
     public float particleColorIntensity;
     public float lightIntensity;
+    public bool isPlane;
     float[] karlSimWeights = new float[9]
     {
         0.05f,  0.2f,  0.05f,
@@ -60,7 +61,7 @@ public class TuringPatternThree : MonoBehaviour
         renderTextureB = new RenderTexture(DIM,DIM,24);
         renderTextureB.enableRandomWrite = true;
         Color setColor = fishColor * Mathf.Pow(2f,particleColorIntensity);
-        particles.SetVector4("Color",setColor);
+        if(!isPlane)particles.SetVector4("Color",setColor);
         setColor = fishColor * Mathf.Pow(2f,fishColorIntensity);
         foreach (var render in renderList)
         {
@@ -68,8 +69,12 @@ public class TuringPatternThree : MonoBehaviour
             render.material.SetTexture("_TextureB", plotTextureB);
             render.material.SetColor("_ColorB",setColor);
         }
-        light.color = fishColor; 
-        light.intensity = lightIntensity;
+        if(!isPlane)
+        {
+            light.color = fishColor; 
+            light.intensity = lightIntensity;
+        }
+        
         testTex = new RenderTexture(DIM,DIM,24);
 
         Texture2D maskTextureCopy = new Texture2D(DIM, DIM);
@@ -169,14 +174,17 @@ public class TuringPatternThree : MonoBehaviour
     {
         fishColor = color;
         Color setColor = fishColor * Mathf.Pow(2f,particleColorIntensity);
-        particles.SetVector4("Color",setColor);
+        if(!isPlane)particles.SetVector4("Color",setColor);
         setColor = fishColor * Mathf.Pow(2f,fishColorIntensity);
         foreach (var render in renderList)
         {
             render.material.SetColor("_ColorB",setColor);
         }
-        light.color = fishColor; 
-        light.intensity = lightIntensity;
+        if(!isPlane)
+        {
+            light.color = fishColor; 
+            light.intensity = lightIntensity;
+        }
     }
 
     static Texture2D ResizeTexture(Texture2D srcTexture, int newWidth, int newHeight) {

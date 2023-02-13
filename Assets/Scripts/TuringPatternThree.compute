@@ -79,24 +79,27 @@ void Init(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void Step(uint3 id : SV_DispatchThreadID)
 {
-    float a = A[DIM*DIM+id.x + id.y*DIM];
-    float b = B[DIM*DIM+id.x + id.y*DIM];
+    float a = A[DIM*DIM+id.x + id.y*DIM]; // 前のステップのA
+    float b = B[DIM*DIM+id.x + id.y*DIM]; // 前のステップのB
     float laplacianA = Laplacian(A,id.x,id.y);
     float laplacianB = Laplacian(B,id.x,id.y);
     float feed = feedR * maskTexture[id.xy].x + feedG * maskTexture[id.xy].y + feedB * maskTexture[id.xy].z;
     float kill = killR * maskTexture[id.xy].x + killG * maskTexture[id.xy].y + killB * maskTexture[id.xy].z;
+
+    // 微分方程式
     A[id.x + id.y*DIM] += (
             DA * laplacianA
             - a * b * b
             + feed * (1 - a)
         )*dt;
-    A[DIM*DIM + id.x + id.y*DIM] = A[id.x + id.y*DIM];
     B[id.x + id.y*DIM] += (
             DB * laplacianB
             + a * b * b
             - (kill + feed) * b
         )*dt;
-    B[DIM*DIM + id.x + id.y*DIM] = B[id.x + id.y*DIM];
+
+    A[DIM*DIM + id.x + id.y*DIM] = A[id.x + id.y*DIM]; // Aを記録
+    B[DIM*DIM + id.x + id.y*DIM] = B[id.x + id.y*DIM]; // Bを記録
 }
 
 [numthreads(8,8,1)]

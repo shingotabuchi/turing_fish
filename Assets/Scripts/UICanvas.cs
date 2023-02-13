@@ -7,16 +7,25 @@ using TMPro;
 public class UICanvas : MonoBehaviour
 {
     public LBM3DAccurate lbm3d;
+
     public Toggle tangentialForceToggle;
     public TextMeshProUGUI tangentialForceScalerText;
     public Slider tangentialForceScaler;
     public TextMeshProUGUI tangentialForceRadiusText;
     public Slider tangentialForceRadius;
+
     public Toggle radialForceToggle;
     public TextMeshProUGUI radialForceScalerText;
     public Slider radialForceScaler;
     public TextMeshProUGUI radialForceRadiusText;
     public Slider radialForceRadius;
+
+    public Toggle touchForceToggle;
+    public TextMeshProUGUI touchForceScalerText;
+    public Slider touchForceScaler;
+    public TextMeshProUGUI touchForceRadiusText;
+    public Slider touchForceRadius;
+
     public Camera sideCamera;
     public Camera topCamera;
     public GameObject constantForceMenu;
@@ -28,6 +37,8 @@ public class UICanvas : MonoBehaviour
         radialForceScalerText.text = "Force Radius : " + lbm3d.radialForceScaler.ToString();
         tangentialForceRadiusText.text = "Force Scaler : " + lbm3d.tangentialForceRadius.ToString();
         radialForceRadiusText.text = "Force Radius : " + lbm3d.radialForceRadius.ToString();
+        touchForceScalerText.text = "Force Scaler : " + lbm3d.touchForceScaler.ToString();
+        touchForceRadiusText.text = "Force Radius : " + lbm3d.touchForceRadius.ToString();
     }
 
     public void OnToggleChange(int forceType)
@@ -37,10 +48,15 @@ public class UICanvas : MonoBehaviour
             lbm3d.tangentialForceIsOn = tangentialForceToggle.isOn;
             lbm3d.compute.SetBool("tangentialForceIsOn",lbm3d.tangentialForceIsOn);
         }
-        else
+        else if(forceType == 1)
         {
             lbm3d.radialForceIsOn = radialForceToggle.isOn;
             lbm3d.compute.SetBool("radialForceIsOn",lbm3d.radialForceIsOn);
+        }
+        else
+        {
+            lbm3d.touchForceIsOn = touchForceToggle.isOn;
+            lbm3d.compute.SetBool("touchForceIsOn",lbm3d.touchForceIsOn);
         }
     }
     
@@ -52,11 +68,17 @@ public class UICanvas : MonoBehaviour
             lbm3d.compute.SetFloat("tangentialForceScaler",lbm3d.tangentialForceScaler);
             tangentialForceScalerText.text = "Force Scaler : " + lbm3d.tangentialForceScaler.ToString();
         } 
-        else
+        else if(forceType == 1)
         {
             lbm3d.radialForceScaler = radialForceScaler.value;
             lbm3d.compute.SetFloat("radialForceScaler",lbm3d.radialForceScaler);
             radialForceScalerText.text = "Force Scaler : " + lbm3d.radialForceScaler.ToString();
+        }
+        else
+        {
+            lbm3d.touchForceScaler = touchForceScaler.value;
+            lbm3d.compute.SetFloat("touchForceScaler",lbm3d.touchForceScaler);
+            touchForceScalerText.text = "Force Scaler : " + lbm3d.touchForceScaler.ToString();
         }
     }
 
@@ -68,11 +90,17 @@ public class UICanvas : MonoBehaviour
             lbm3d.compute.SetFloat("tangentialForceRadius",lbm3d.tangentialForceRadius);
             tangentialForceRadiusText.text = "Force Radius : " + lbm3d.tangentialForceRadius.ToString();
         }
-        else
+        else if(forceType == 1)
         {
             lbm3d.radialForceRadius = radialForceRadius.value;
             lbm3d.compute.SetFloat("radialForceRadius",lbm3d.radialForceRadius);
             radialForceRadiusText.text = "Force Radius : " + lbm3d.radialForceRadius.ToString();
+        }
+        else
+        {
+            lbm3d.touchForceRadius = touchForceRadius.value;
+            lbm3d.compute.SetFloat("touchForceRadius",lbm3d.touchForceRadius);
+            touchForceRadiusText.text = "Force Radius : " + lbm3d.touchForceRadius.ToString();
         }
     }
 

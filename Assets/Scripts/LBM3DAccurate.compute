@@ -13,8 +13,11 @@ float tangentialForceRadius;
 float tangentialForceScaler;
 float radialForceRadius;
 float radialForceScaler;
+float touchForceScaler;
+float touchForceRadius;
 bool tangentialForceIsOn;
 bool radialForceIsOn;
+bool touchForceIsOn;
 bool isTouched;
 float2 touchTextureCoord;
 
@@ -147,13 +150,13 @@ void Collisions(uint3 id : SV_DispatchThreadID)
     };
 
 
-    if(isTouched)
+    if(isTouched && touchForceIsOn)
     {
         for(touchCoordIndex = 0; touchCoordIndex < 5; touchCoordIndex++)
         {
             float2 coordFromTouch = float2(x,y) - touchCoords[touchCoordIndex];
             float distFromTouchSqrd =  coordFromTouch.x * coordFromTouch.x + coordFromTouch.y * coordFromTouch.y;
-            if(distFromTouchSqrd < tangentialForceRadius*tangentialForceRadius)
+            if(distFromTouchSqrd < touchForceRadius*touchForceRadius)
             {
                 inTouchForceArea = true;
                 break;
@@ -173,7 +176,7 @@ void Collisions(uint3 id : SV_DispatchThreadID)
         if(inTouchForceArea)
         {
             float2 coordFromTouch = float2(x,y) - touchCoords[touchCoordIndex];
-            force += tangentialForceScaler * float3(-coordFromTouch.y,coordFromTouch.x,0);
+            force += touchForceScaler * float3(-coordFromTouch.y,coordFromTouch.x,0);
         }
         if(inRadialForceArea) force += radialForceScaler * float3(x,y,0);
 
